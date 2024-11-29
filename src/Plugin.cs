@@ -14,16 +14,19 @@ public class Plugin : BaseUnityPlugin
 {
     internal static new ManualLogSource Logger;
 
-    internal static ConfigEntry<KeyboardShortcut> RefreshPriceKey;
+    internal static ConfigEntry<bool> AutoUpdatePricingData;
+
+    internal static ConfigEntry<KeyboardShortcut> ForcepdatePricingDataKey;
 
     private void Awake()
     {
         // Plugin startup logic
         Logger = base.Logger;
 
-        RefreshPriceKey = Config.Bind("RefreshPriceBtn", "Button to refresh prices",
-                new KeyboardShortcut(KeyCode.LeftControl, KeyCode.R));
+        AutoUpdatePricingData = Config.Bind("General", "AutoUpdatePricingData", true, "Enable to update store prices on day cycle change and licence purchase");
 
+        ForcepdatePricingDataKey = Config.Bind("Key Bindings", "ForcepdatePricingDataKey",
+                new KeyboardShortcut(KeyCode.LeftControl, KeyCode.R));
 
         Harmony harmony = new(MyPluginInfo.PLUGIN_GUID);
         harmony.PatchAll(typeof(Patches));
@@ -31,22 +34,39 @@ public class Plugin : BaseUnityPlugin
         Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
     }
 
-    private void Update()
-    {
-        if (RefreshPriceKey.Value.IsDown())
-        {
-            Patches.UpdatePrices();
-        }
-    }
 
     class Patches
     {
 
+        [HarmonyPatch(typeof(PricingProductViewer), nameof(PricingProductViewer.UpdateUnlockedProducts))]
+        [HarmonyPostfix]
+        static void OnUpdateUnlockedProducts(int licenseID)
+        {
+            UpdatePrices();
+        }
+
         [HarmonyPatch(typeof(DayCycleManager), nameof(DayCycleManager.StartNextDay))]
         [HarmonyPostfix]
-        static void OnNextDayCycle()
+        static void OnNextDay()
         {
-            // UpdatePrices();
+            UpdatePrices();
+        }
+
+        [HarmonyPatch(typeof(DayCycleManager), "Start")]
+        [HarmonyPostfix]
+        static void OnDayStart()
+        {
+            UpdatePrices();
+        }
+
+        [HarmonyPatch(typeof(DayCycleManager), "Update")]
+        [HarmonyPostfix]
+        static void OnDayUpdate()
+        {
+            if (ForcepdatePricingDataKey.Value.IsDown())
+            {
+                UpdatePrices(false);
+            }
         }
 
 
@@ -71,8 +91,13 @@ public class Plugin : BaseUnityPlugin
 
         }
 
-        public static void UpdatePrices()
+        private static void UpdatePrices(bool auto = true)
         {
+            if (auto && !AutoUpdatePricingData.Value)
+            {
+                return;
+            }
+
             Singleton<PriceManager>.Instance.pricingDatas.ForEach((data) =>
             {
                 var currentCost = Singleton<PriceManager>.Instance.CurrentCost(data.ProductID);
@@ -81,9 +106,10 @@ public class Plugin : BaseUnityPlugin
                 Singleton<PriceManager>.Instance.PriceSet(new Pricing(data.ProductID, price));
             });
 
-            UnityEngine.Object.FindObjectOfType<PricingProductViewer>(includeInactive: true).LoadLastChangedCost();
-
-            Singleton<SFXManager>.Instance.PlayCoinSFX();
+            if (!auto)
+            {
+                Singleton<SFXManager>.Instance.PlayCoinSFX();
+            }
 
         }
 

@@ -26,7 +26,7 @@ public class Plugin : BaseUnityPlugin
         AutoUpdatePricingData = Config.Bind("General", "AutoUpdatePricingData", true, "Enable to update store prices on day cycle change and licence purchase");
 
         ForcepdatePricingDataKey = Config.Bind("Key Bindings", "ForcepdatePricingDataKey",
-                new KeyboardShortcut(KeyCode.LeftControl, KeyCode.R));
+                new KeyboardShortcut(KeyCode.E, KeyCode.LeftControl));
 
         Harmony harmony = new(MyPluginInfo.PLUGIN_GUID);
         harmony.PatchAll(typeof(Patches));
@@ -75,7 +75,7 @@ public class Plugin : BaseUnityPlugin
         static void OnPricingItemSetup(Pricing data, ref PricingItem __instance)
         {
             var avgCostText = Traverse.Create(__instance).Field("m_AvgCostText").GetValue() as TMP_Text;
-            avgCostText.text = string.Format("{0} / {1}",
+            avgCostText.text = string.Format("{0}</size> / {1}",
                 data.AvgCost.ToMoneyText(avgCostText.fontSize),
                 Singleton<PriceEvaluationManager>.Instance.PurchaseChance(data.ProductID)
                     .ToString("0.##\\%"));
@@ -102,14 +102,21 @@ public class Plugin : BaseUnityPlugin
             {
                 var currentCost = Singleton<PriceManager>.Instance.CurrentCost(data.ProductID);
                 var product = Singleton<IDManager>.Instance.ProductSO(data.ProductID);
-                var price = (((product.MaxProfitRate - product.OptimumProfitRate) * 0.1f + product.OptimumProfitRate) / 100f + 1f) * currentCost;
-                Singleton<PriceManager>.Instance.PriceSet(new Pricing(data.ProductID, price));
+                var newPrice = (((product.MaxProfitRate - product.OptimumProfitRate) * 0.1f + product.OptimumProfitRate) / 100f + 1f) * currentCost;
+                
+                if (!Mathf.Approximately(data.Price, newPrice)) {
+                    Logger.LogDebug($"Update price: product={Singleton<IDManager>.Instance.ProductSO(data.ProductID).name},oldPrice={data.Price},newPrice={newPrice}");
+                    Singleton<PriceManager>.Instance.PriceSet(new Pricing(data.ProductID, newPrice));
+                }
+                
             });
 
             if (!auto)
             {
                 Singleton<SFXManager>.Instance.PlayCoinSFX();
             }
+
+            Logger.LogInfo($"Pricing data update finished: auto={auto}");
 
         }
 

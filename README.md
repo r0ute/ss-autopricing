@@ -1,5 +1,9 @@
 # Supermarket Simulator Automatic Pricing BepInEx Plugin
 
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/r0ute/ss-autopricing/dotnet.yml)
+![GitHub last commit](https://img.shields.io/github/last-commit/r0ute/ss-autopricing)
+![GitHub Release Date](https://img.shields.io/github/release-date/r0ute/ss-autopricing)
+
 ## Overview
 
 This BepInEx plugin for _Supermarket Simulator_ simplifies pricing strategies by dynamically adjusting customer purchase chances.

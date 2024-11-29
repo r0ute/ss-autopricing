@@ -34,14 +34,8 @@ jobs:
     - name: Publish
       if: startsWith(github.ref, 'refs/tags/')
       run: dotnet publish -c Release --no-restore
-    - name: Package
-      if: startsWith(github.ref, 'refs/tags/')
-      run: |
-        cd bin/Release/netstandard2.1/publish
-        mkdir Package && mkdir Package/BepInEx && mkdir Package/BepInEx/plugins
-        cp com.bepinex.plugin.ss.autopricing.dll Package/BepInEx/plugins/
     - name: Release
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: bin/Release/netstandard2.1/publish/Package/*
+        files: bin/Release/netstandard2.1/publish/com.bepinex.plugin.ss.autopricing.dll

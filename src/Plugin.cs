@@ -16,6 +16,8 @@ public class Plugin : BaseUnityPlugin
 
     internal static ConfigEntry<bool> AutoUpdatePricingData;
 
+    internal static ConfigEntry<int> ProfitRateBoost;
+
     internal static ConfigEntry<KeyboardShortcut> ForcepdatePricingDataKey;
 
     private void Awake()
@@ -25,7 +27,14 @@ public class Plugin : BaseUnityPlugin
 
         AutoUpdatePricingData = Config.Bind("General", "AutoUpdatePricingData", true, "Enable to update store prices on day cycle change and licence purchase");
 
-        ForcepdatePricingDataKey = Config.Bind("Key Bindings", "ForcepdatePricingDataKey",
+        ProfitRateBoost = Config.Bind("General", "ProfitRateBoost,%", 10, new ConfigDescription(
+            @"Adjust the profit rate coefficient:
+            At 0%, you make no profit, but customers are happy;
+            at 10%, customers always buy products, and sales remain profitable;
+            at 11%, customers start complaining about product prices;
+            at 100%, customers will never buy products.", new AcceptableValueRange<int>(0, 100)));
+
+        ForcepdatePricingDataKey = Config.Bind("Key Bindings", "ForceUpdatePricingDataKey",
                 new KeyboardShortcut(KeyCode.E, KeyCode.LeftControl));
 
         Harmony harmony = new(MyPluginInfo.PLUGIN_GUID);
@@ -102,13 +111,14 @@ public class Plugin : BaseUnityPlugin
             {
                 var currentCost = Singleton<PriceManager>.Instance.CurrentCost(data.ProductID);
                 var product = Singleton<IDManager>.Instance.ProductSO(data.ProductID);
-                var newPrice = (((product.MaxProfitRate - product.OptimumProfitRate) * 0.1f + product.OptimumProfitRate) / 100f + 1f) * currentCost;
-                
-                if (!Mathf.Approximately(data.Price, newPrice)) {
+                var newPrice = (float)(((product.MaxProfitRate - product.OptimumProfitRate) * ProfitRateBoost.Value / 100f + product.OptimumProfitRate) / 100f + 1f) * currentCost;
+
+                if (!Mathf.Approximately(data.Price, newPrice))
+                {
                     Logger.LogDebug($"Update price: product={Singleton<IDManager>.Instance.ProductSO(data.ProductID).name},oldPrice={data.Price},newPrice={newPrice}");
                     Singleton<PriceManager>.Instance.PriceSet(new Pricing(data.ProductID, newPrice));
                 }
-                
+
             });
 
             if (!auto)

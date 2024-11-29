@@ -39,7 +39,7 @@ jobs:
       run: |
         cd /home/runner/work/ss-autopricing/ss-autopricing/bin/Release/netstandard2.1/publish
         mkdir Package && mkdir Package/BepInEx && mkdir Package/BepInEx/plugins
-        cp com.bepinex.plugin.ss.autopricing.dll BepInEx/plugins/
+        cp com.bepinex.plugin.ss.autopricing.dll Package/BepInEx/plugins/
     - name: Release
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')

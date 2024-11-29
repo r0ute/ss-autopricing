@@ -14,13 +14,12 @@
 
 ## DisplayType
 
-| Abbreviation | Display Type | Color (HTML Code)     |
-|--------------|--------------|-----------------------|
+| Abbreviation | Display Type | Color (HTML Code)                                         |
+| ------------ | ------------ | --------------------------------------------------------- |
 | F            | FREEZER      | <span style="color:#A3D8FF">Icy Blue (#A3D8FF)</span>     |
-| R            | FRIDGE       | <span style="color:#B3E0E5">Pale Cyan (#B3E0E5)</span>   |
+| R            | FRIDGE       | <span style="color:#B3E0E5">Pale Cyan (#B3E0E5)</span>    |
 | C            | CRATE        | <span style="color:#D1A15A">Wooden Brown (#D1A15A)</span> |
 | S            | SHELF        | <span style="color:#D3D3D3">Neutral Gray (#D3D3D3)</span> |
-
 
 ## ProductCategory
 

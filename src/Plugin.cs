@@ -14,10 +14,16 @@ public class Plugin : BaseUnityPlugin
 {
     internal static new ManualLogSource Logger;
 
+    internal static ConfigEntry<KeyboardShortcut> RefreshPriceKey;
+
     private void Awake()
     {
         // Plugin startup logic
         Logger = base.Logger;
+
+        RefreshPriceKey = Config.Bind("RefreshPriceBtn", "Button to refresh prices",
+                new KeyboardShortcut(KeyCode.LeftControl, KeyCode.R));
+
 
         Harmony harmony = new(MyPluginInfo.PLUGIN_GUID);
         harmony.PatchAll(typeof(Patches));
@@ -25,8 +31,23 @@ public class Plugin : BaseUnityPlugin
         Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
     }
 
+    private void Update()
+    {
+        if (RefreshPriceKey.Value.IsDown())
+        {
+            Patches.UpdatePrices();
+        }
+    }
+
     class Patches
     {
+
+        [HarmonyPatch(typeof(DayCycleManager), nameof(DayCycleManager.StartNextDay))]
+        [HarmonyPostfix]
+        static void OnNextDayCycle()
+        {
+            // UpdatePrices();
+        }
 
 
         [HarmonyPatch(typeof(PricingItem), nameof(PricingItem.Setup))]
@@ -47,6 +68,22 @@ public class Plugin : BaseUnityPlugin
             marketPriceText.text = string.Format("{0}</size>..{1}",
                 data.MarketPrice.ToMoneyText(marketPriceText.fontSize),
                 maxCost.ToMoneyText(marketPriceText.fontSize));
+
+        }
+
+        public static void UpdatePrices()
+        {
+            Singleton<PriceManager>.Instance.pricingDatas.ForEach((data) =>
+            {
+                var currentCost = Singleton<PriceManager>.Instance.CurrentCost(data.ProductID);
+                var product = Singleton<IDManager>.Instance.ProductSO(data.ProductID);
+                var price = (((product.MaxProfitRate - product.OptimumProfitRate) * 0.1f + product.OptimumProfitRate) / 100f + 1f) * currentCost;
+                Singleton<PriceManager>.Instance.PriceSet(new Pricing(data.ProductID, price));
+            });
+
+            UnityEngine.Object.FindObjectOfType<PricingProductViewer>(includeInactive: true).LoadLastChangedCost();
+
+            Singleton<SFXManager>.Instance.PlayCoinSFX();
 
         }
 

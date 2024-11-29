@@ -29,3 +29,16 @@
 | D            | DRINK            | <span style="color:#67BFFF">Refreshing Blue (#67BFFF)</span> |
 | C            | CLEANING         | <span style="color:#F0F8FF">Clean White (#F0F8FF)</span>     |
 | B            | BOOK             | <span style="color:#C2B29A">Calming Brown (#C2B29A)</span>   |
+
+
+## m_PurchaseChanceCurveForExpensivePrice
+
+length=3
+value=100,time=0
+value=100,time=0.1
+value=0,time=1
+
+## m_PurchaseChanceCurveForCheapPrice
+length=2
+value=200,time=0
+value=100,time=1

@@ -31,8 +31,14 @@
     <Reference Include="SSAssembly" Private="false">
       <HintPath>lib\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="MyBox" Private="false">
+      <HintPath>lib\Managed\MyBox.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.UI" Private="false">
       <HintPath>lib\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro" Private="false">
+      <HintPath>lib\Managed\Unity.TextMeshPro.dll</HintPath>
     </Reference>
   </ItemGroup>
 

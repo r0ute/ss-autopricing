@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -107,19 +108,25 @@ public class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Singleton<PriceManager>.Instance.pricingDatas.ForEach((data) =>
-            {
-                var currentCost = Singleton<PriceManager>.Instance.CurrentCost(data.ProductID);
-                var product = Singleton<IDManager>.Instance.ProductSO(data.ProductID);
-                var newPrice = (float)(((product.MaxProfitRate - product.OptimumProfitRate) * ProfitRateBoost.Value / 100f + product.OptimumProfitRate) / 100f + 1f) * currentCost;
-
-                if (!Mathf.Approximately(data.Price, newPrice))
+            Singleton<PriceManager>.Instance.pricingDatas
+                .Where(data => Singleton<ProductLicenseManager>.Instance.UnlockedProducts.Contains(data.ProductID))
+                .ForEach((data) =>
                 {
-                    Logger.LogDebug($"Update price: product={Singleton<IDManager>.Instance.ProductSO(data.ProductID).name},oldPrice={data.Price},newPrice={newPrice}");
-                    Singleton<PriceManager>.Instance.PriceSet(new Pricing(data.ProductID, newPrice));
-                }
+                    var currentCost = Singleton<PriceManager>.Instance.CurrentCost(data.ProductID);
+                    var product = Singleton<IDManager>.Instance.ProductSO(data.ProductID);
+                    var newPrice = (float)(((product.MaxProfitRate - product.OptimumProfitRate) * ProfitRateBoost.Value / 100f + product.OptimumProfitRate) / 100f + 1f) * currentCost;
 
-            });
+                    if (!Mathf.Approximately(data.Price, newPrice))
+                    {
+                        Logger.LogDebug($"Update price: product={Singleton<IDManager>.Instance.ProductSO(data.ProductID).name},oldPrice={data.Price},newPrice={newPrice}");
+                        Singleton<PriceManager>.Instance.PriceSet(new Pricing(data.ProductID, newPrice));
+                    }
+
+                    if (!Singleton<ProductLicenseManager>.Instance.UnlockedProducts.Contains(data.ProductID)) {
+                        Logger.LogWarning($"Update price: Locked product={Singleton<IDManager>.Instance.ProductSO(data.ProductID).name}");
+                    }
+
+                });
 
             if (!auto)
             {

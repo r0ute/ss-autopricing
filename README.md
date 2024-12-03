@@ -8,16 +8,16 @@
 
 This BepInEx plugin for _Supermarket Simulator_ simplifies pricing strategies by dynamically adjusting customer purchase chances.
 
+## Why Choose This Plugin?
+
+This is the only plugin that takes into account Product Buy Chance. Other plugins simply mark up prices for all products by a certain amount or percentage, which has nothing to do with how the game decides when customers buy products.
+
 ### Main Features
 
 - Automatically adjusts product pricing based on customer purchase chances.
 - Dynamically calculates purchase likelihood based on pricing relative to Market Price.
 - Configurable settings for fine-tuning pricing and maximizing profits.
 - Works seamlessly with the in-game Pricing Viewer screen.
-
-## Why?
-
-This is the only plugin that takes into account Product Buy Chance. Other plugins simply mark up prices for all products by a certain amount or percentage, which has nothing to do with how the game decides when customers buy products.
 
 ## User Guide
 

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -48,9 +47,9 @@ public class Plugin : BaseUnityPlugin
     class Patches
     {
 
-        [HarmonyPatch(typeof(PricingProductViewer), nameof(PricingProductViewer.UpdateUnlockedProducts))]
+        [HarmonyPatch(typeof(ProductLicenseManager), nameof(ProductLicenseManager.PurchaseLicense))]
         [HarmonyPostfix]
-        static void OnUpdateUnlockedProducts(int licenseID)
+        static void OnPurchaseLicense(int licenseID)
         {
             UpdatePrices();
         }
@@ -94,7 +93,7 @@ public class Plugin : BaseUnityPlugin
             var marketPriceText = Traverse.Create(__instance).Field("m_MarketPriceText").GetValue() as TMP_Text;
             var currentCost = Singleton<PriceManager>.Instance.CurrentCost(data.ProductID);
             var product = Singleton<IDManager>.Instance.ProductSO(data.ProductID);
-            var maxCost = (float)Math.Round(currentCost + currentCost * product.MaxProfitRate / 100f, 2);
+            var maxCost = (float)Math.Round(currentCost + currentCost * product.MaxProfitRate / 100, 2);
             marketPriceText.text = string.Format("{0}</size>..{1}",
                 data.MarketPrice.ToMoneyText(marketPriceText.fontSize),
                 maxCost.ToMoneyText(marketPriceText.fontSize));
@@ -108,25 +107,25 @@ public class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Singleton<PriceManager>.Instance.pricingDatas
-                .Where(data => Singleton<ProductLicenseManager>.Instance.UnlockedProducts.Contains(data.ProductID))
-                .ForEach((data) =>
+            Singleton<PriceManager>.Instance.pricingDatas.ForEach((data) =>
+            {
+                if (!Singleton<ProductLicenseManager>.Instance.UnlockedProducts.Contains(data.ProductID))
                 {
-                    var currentCost = Singleton<PriceManager>.Instance.CurrentCost(data.ProductID);
-                    var product = Singleton<IDManager>.Instance.ProductSO(data.ProductID);
-                    var newPrice = (float)(((product.MaxProfitRate - product.OptimumProfitRate) * ProfitRateBoost.Value / 100f + product.OptimumProfitRate) / 100f + 1f) * currentCost;
+                    return;
+                }
 
-                    if (!Mathf.Approximately(data.Price, newPrice))
-                    {
-                        Logger.LogDebug($"Update price: product={Singleton<IDManager>.Instance.ProductSO(data.ProductID).name},oldPrice={data.Price},newPrice={newPrice}");
-                        Singleton<PriceManager>.Instance.PriceSet(new Pricing(data.ProductID, newPrice));
-                    }
+                var currentCost = Singleton<PriceManager>.Instance.CurrentCost(data.ProductID);
+                var product = Singleton<IDManager>.Instance.ProductSO(data.ProductID);
+                var newPrice = (float)Math.Round((((product.MaxProfitRate - product.OptimumProfitRate)
+                    * ProfitRateBoost.Value / 100 + product.OptimumProfitRate) / 100 + 1) * currentCost, 2);
 
-                    if (!Singleton<ProductLicenseManager>.Instance.UnlockedProducts.Contains(data.ProductID)) {
-                        Logger.LogWarning($"Update price: Locked product={Singleton<IDManager>.Instance.ProductSO(data.ProductID).name}");
-                    }
+                if (!Mathf.Approximately(Singleton<PriceManager>.Instance.SellingPrice(data.ProductID), newPrice))
+                {
+                    Singleton<PriceManager>.Instance.PriceSet(new Pricing(data.ProductID, newPrice));
+                    Logger.LogDebug($"Update price: product={Singleton<IDManager>.Instance.ProductSO(data.ProductID).name},oldPrice={data.Price},newPrice={newPrice}");
+                }
 
-                });
+            });
 
             if (!auto)
             {

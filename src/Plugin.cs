@@ -93,7 +93,7 @@ public class Plugin : BaseUnityPlugin
             var marketPriceText = Traverse.Create(__instance).Field("m_MarketPriceText").GetValue() as TMP_Text;
             var currentCost = Singleton<PriceManager>.Instance.CurrentCost(data.ProductID);
             var product = Singleton<IDManager>.Instance.ProductSO(data.ProductID);
-            var maxCost = (float)Math.Round(currentCost + currentCost * product.MaxProfitRate / 100, 2);
+            var maxCost = RoundPriceDown(currentCost + currentCost * product.MaxProfitRate / 100);
             marketPriceText.text = string.Format("{0}</size>..{1}",
                 data.MarketPrice.ToMoneyText(marketPriceText.fontSize),
                 maxCost.ToMoneyText(marketPriceText.fontSize));
@@ -114,15 +114,17 @@ public class Plugin : BaseUnityPlugin
                     return;
                 }
 
-                var currentCost = Singleton<PriceManager>.Instance.CurrentCost(data.ProductID);
                 var product = Singleton<IDManager>.Instance.ProductSO(data.ProductID);
-                var newPrice = (float)Math.Round((((product.MaxProfitRate - product.OptimumProfitRate)
-                    * ProfitRateBoost.Value / 100 + product.OptimumProfitRate) / 100 + 1) * currentCost, 2);
+                var currentCost = Singleton<PriceManager>.Instance.CurrentCost(data.ProductID);
 
-                if (!Mathf.Approximately(Singleton<PriceManager>.Instance.SellingPrice(data.ProductID), newPrice))
+                var newPrice = RoundPriceDown((((product.MaxProfitRate - product.OptimumProfitRate)
+                    * ProfitRateBoost.Value / 100 + product.OptimumProfitRate) / 100 + 1) * currentCost);
+                var oldPrice = Singleton<PriceManager>.Instance.SellingPrice(data.ProductID);
+
+                if (!Mathf.Approximately(oldPrice, newPrice))
                 {
                     Singleton<PriceManager>.Instance.PriceSet(new Pricing(data.ProductID, newPrice));
-                    Logger.LogDebug($"Update price: product={Singleton<IDManager>.Instance.ProductSO(data.ProductID).name},oldPrice={data.Price},newPrice={newPrice}");
+                    Logger.LogDebug($"Update price: product={product.name},oldPrice={oldPrice},newPrice={newPrice},profitRateBoost={ProfitRateBoost.Value},purchaseChance={Singleton<PriceEvaluationManager>.Instance.PurchaseChance(data.ProductID)}");
                 }
 
             });
@@ -136,6 +138,12 @@ public class Plugin : BaseUnityPlugin
 
         }
 
+        private static float RoundPriceDown(float price)
+        {
+            var priceStr = price.ToString("0.000");
+            var result = float.Parse(priceStr[..^1]);
+            return result;
+        }
 
     }
 }
